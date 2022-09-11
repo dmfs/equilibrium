@@ -1,0 +1,66 @@
+plugins {
+    id 'java-library'
+    id 'org.dmfs.gitversion' version '0.7.0'
+}
+apply from: "publish.gradle"
+apply from: "jacoco.gradle"
+
+group 'org.dmfs'
+
+repositories {
+    mavenCentral()
+}
+
+gitVersion {
+    issueTracker GitHub {
+        repo = "dmfs/equilibrium"
+        if (project.hasProperty("GITHUB_API_TOKEN")) {
+            accessToken = GITHUB_API_TOKEN
+        }
+    }
+    changes {
+        are major when {
+            commitMessage contains("(?i)#major\\b")
+        }
+        are major when {
+            commitMessage contains("(?i)#break\\b")
+        }
+        are minor when {
+            commitMessage containsIssue { issue -> issue.labels?.every { it.name != "bug" } }
+        }
+        are patch when {
+            commitMessage containsIssue { issue -> issue.labels?.any { it.name == "bug" } }
+        }
+        are minor when {
+            commitMessage contains("#feature\\b")
+        }
+        are minor when {
+            commitMessage contains("(?i)\\b(implement(s|ed)?|close[sd]?) #\\d+\\b")
+        }
+        are patch when {
+            commitMessage contains("(?i)\\b(fix(e[sd])?|resolve[sd]?) #\\d+\\b")
+        }
+        otherwise patch
+    }
+    releaseBranchPattern ~/main$/
+}
+
+targetCompatibility = JavaVersion.VERSION_11
+sourceCompatibility = JavaVersion.VERSION_11
+
+dependencies {
+    compileOnly 'org.dmfs:srcless-annotations:0.1.0'
+    annotationProcessor 'org.dmfs:srcless-processors:0.1.0'
+
+    implementation 'org.dmfs:jems2:2.8.0'
+
+    testCompileOnly 'org.dmfs:srcless-annotations:0.1.0'
+    testAnnotationProcessor 'org.dmfs:srcless-processors:0.1.0'
+    testImplementation 'org.saynotobugs:confidence-core:0.2.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
